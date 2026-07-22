@@ -36,7 +36,7 @@ def init_db():
             [
                 ("wake up", 1),
                 ("feed dog", 1),
-                ("pet dog", 1)
+                ("pet dog", 0)
             ]
         )
         conn.commit()
@@ -44,25 +44,6 @@ def init_db():
     conn.close()
 
 init_db()
-
-
-tasks = [
-    {
-        "id": 1,
-        "title": "wake up",
-        "done": True
-    },
-    {
-        "id": 2,
-        "title": "feed dog",
-        "done": True
-    },
-    {
-        "id": 3,
-        "title": "pet dog",
-        "done": False
-    }
-]
 
 @app.get("/", summary="Display basic API information")
 async def root():
@@ -78,16 +59,32 @@ async def get_health():
 
 @app.get("/tasks", summary="Return full list of tasks")
 async def get_tasks():
-    return tasks
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM tasks") # Inspect all columns from tasks
+    rows = cursor.fetchall() # add sql data into Python as tuple
+    conn.close()
+
+    result = [
+        {"id": row[0], "title": row[1], "done": bool(row[2])}
+        for row in rows
+    ]
+    return result
 
 @app.get("/tasks/{task_id}", summary="Return a single task by ID")
 async def get_task(task_id: int):
+    conn = get_connection()
+    cursor = conn.cursor()
 
-    # Iterate through every task, return matching task
-    for task in tasks:
-        if task["id"] == task_id:
-            return task
-    raise HTTPException(status_code=404, detail={"error": f"Task {task_id} not found"})
+    cursor.execute("SELECT * FROM tasks WHERE id = ?", (task_id, ))
+    row = cursor.fetchone() # Get row where id matches request
+    conn.close()
+
+    # Raise 404 if row with requested id not found
+    if row is None:
+        raise HTTPException(status_code=404, detail={"error": f"Task {task_id} not found"})
+    return {"id": row[0], "title": row[1], "done": bool(row[2])}
 
 @app.post("/tasks", status_code=201, summary="Create a new task")
 async def create_task(new_task: TaskCreate):
