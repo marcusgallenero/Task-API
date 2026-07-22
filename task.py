@@ -63,3 +63,23 @@ async def create_task(new_task: TaskCreate):
 
     tasks.append(task)
     return task
+
+@app.put("/tasks/{task_id}")
+async def update_task(task_id: int, updated_task: TaskCreate):
+    if not updated_task.title.strip():
+        raise HTTPException(status_code=400, detail={"error":"Bad Request"})
+
+    for task in tasks:
+        if task["id"] == task_id:
+            task["title"] = updated_task.title
+            task["done"] = updated_task.done
+            return task
+    raise HTTPException(status_code=404, detail={"error": f"Task {task_id} not found"})
+
+@app.delete("/tasks/{task_id}")
+async def delete_task(task_id: int):
+    for task in tasks:
+        if task["id"] == task_id:
+            tasks.remove(task)
+            return
+    raise HTTPException(status_code=404, detail={"error": f"Task {task_id} not found"})
