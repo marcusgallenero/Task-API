@@ -20,6 +20,12 @@ uvicorn task:app --reload
 
 The API runs at ``http://localhost:8000/``. OpenAPI docs (Swagger UI) are at ``http://localhost:8000/docs``.
 
+Start Postgres in Docker:
+
+```
+docker run --name taskdb -e POSTGRES_PASSWORD=dev -e POSTGRES_DB=tasks -p 5432:5432 -v taskdata:/var/lib/postgresql/data -d postgres
+```
+
 ### Endpoints
 
 | Method | Path             | Description                   |
