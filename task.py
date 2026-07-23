@@ -83,7 +83,7 @@ async def get_task(task_id: int):
     cursor = conn.cursor()
 
     # Get task and row from tasks where id matches request
-    cursor.execute("SELECT * FROM tasks WHERE id = ?", (task_id, ))
+    cursor.execute("SELECT * FROM tasks WHERE id = %s", (task_id, ))
     row = cursor.fetchone()
     conn.close()
 
