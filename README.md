@@ -53,3 +53,17 @@ This should then create a new task, and return:
 This can also be done in Swagger UI by inputting text below, and pressing **execute**.
 
 ![1784757393149](image/README/1784757393149.png)
+
+## SQLite & DB Browser
+
+### Running DB Browser
+
+Using the query:
+
+```SQL
+SELECT * FROM tasks;
+```
+
+It returns the entire table of our database, as shown below (with only sample tasks):
+
+![1784774661611](image/README/1784774661611.png)
