@@ -91,14 +91,20 @@ async def create_task(new_task: TaskCreate):
     if not new_task.title.strip() or not new_task.title:
         raise HTTPException(status_code=400, detail={"error":"Bad Request"})
 
-    task = {
-        "id": len(tasks) + 1,
-        "title": new_task.title,
-        "done": new_task.done
-    }
+    conn = get_connection()
+    cursor = conn.cursor()
 
-    tasks.append(task)
-    return task
+    # Add row in tasks with filled in title and done columns 
+    cursor.execute(
+        "INSERT INTO tasks (title, done) VALUES (?, ?)",
+                   (new_task.title, int(new_task.done))
+    )
+    conn.commit()
+
+    new_id = cursor.lastrowid # Get id generated for new task
+    conn.close
+
+    return {"id": new_id, "title": new_task.title, "done": new_task.done}
 
 @app.put("/tasks/{task_id}", summary="Update task by ID")
 async def update_task(task_id: int, updated_task: TaskCreate):
