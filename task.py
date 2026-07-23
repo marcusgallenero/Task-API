@@ -102,7 +102,7 @@ async def create_task(new_task: TaskCreate):
     conn.commit()
 
     new_id = cursor.lastrowid # Get id generated for new task
-    conn.close
+    conn.close()
 
     return {"id": new_id, "title": new_task.title, "done": new_task.done}
 
@@ -111,17 +111,31 @@ async def update_task(task_id: int, updated_task: TaskCreate):
     if not updated_task.title.strip():
         raise HTTPException(status_code=400, detail={"error":"Bad Request"})
 
-    for task in tasks:
-        if task["id"] == task_id:
-            task["title"] = updated_task.title
-            task["done"] = updated_task.done
-            return task
-    raise HTTPException(status_code=404, detail={"error": f"Task {task_id} not found"})
+    conn = get_connection()
+    cursor = conn.cursor()
 
-@app.delete("/tasks/{task_id}", summary="Delete a task by ID")
+    cursor.execute(
+        "UPDATE tasks SET title = ?, done = ? WHERE id = ?",
+        (updated_task.title, int(updated_task.done), task_id)
+    )
+    conn.commit()
+
+    if cursor.rowcount == 0:
+        conn.close()
+        raise HTTPException(status_code=404, detail={"error": f"Task {task_id} not found"})
+    conn.close()
+    return {"id": task_id, "title":updated_task.title, "done": updated_task.done}
+
+@app.delete("/tasks/{task_id}", status_code=204, summary="Delete a task by ID")
 async def delete_task(task_id: int):
-    for task in tasks:
-        if task["id"] == task_id:
-            tasks.remove(task)
-            return
-    raise HTTPException(status_code=404, detail={"error": f"Task {task_id} not found"})
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("DELETE FROM tasks WHERE id = ?", (task_id, ))
+    conn.commit()
+
+    if cursor.rowcount == 0:
+        conn.close()
+        raise HTTPException(status_code=404, detail={"error": f"Task {task_id} not found"})
+    conn.close()
+    return 
