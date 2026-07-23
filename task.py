@@ -66,6 +66,7 @@ async def get_tasks():
     rows = cursor.fetchall() # add sql data into Python as tuple
     conn.close()
 
+    
     result = [
         {"id": row[0], "title": row[1], "done": bool(row[2])}
         for row in rows
@@ -77,8 +78,9 @@ async def get_task(task_id: int):
     conn = get_connection()
     cursor = conn.cursor()
 
+    # Get task and row from tasks where id matches request
     cursor.execute("SELECT * FROM tasks WHERE id = ?", (task_id, ))
-    row = cursor.fetchone() # Get row where id matches request
+    row = cursor.fetchone()
     conn.close()
 
     # Raise 404 if row with requested id not found
@@ -114,12 +116,14 @@ async def update_task(task_id: int, updated_task: TaskCreate):
     conn = get_connection()
     cursor = conn.cursor()
 
+    # change title and done columns on row with specified id
     cursor.execute(
         "UPDATE tasks SET title = ?, done = ? WHERE id = ?",
         (updated_task.title, int(updated_task.done), task_id)
     )
     conn.commit()
 
+    # raise error if no rows were changed
     if cursor.rowcount == 0:
         conn.close()
         raise HTTPException(status_code=404, detail={"error": f"Task {task_id} not found"})
@@ -131,9 +135,11 @@ async def delete_task(task_id: int):
     conn = get_connection()
     cursor = conn.cursor()
 
+    # Delete task with specified id
     cursor.execute("DELETE FROM tasks WHERE id = ?", (task_id, ))
     conn.commit()
 
+    # raise error if no rows were changed
     if cursor.rowcount == 0:
         conn.close()
         raise HTTPException(status_code=404, detail={"error": f"Task {task_id} not found"})
