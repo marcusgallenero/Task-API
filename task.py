@@ -1,6 +1,10 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-import sqlite3
+import os
+import psycopg
+from dotenv import load_dotenv
+
+load_dotenv() # Read .env and loads keys into environment
 
 class TaskCreate(BaseModel):
     title: str = ""
@@ -8,10 +12,10 @@ class TaskCreate(BaseModel):
 
 app = FastAPI()
 
-DB_FILE = "tasks.db"
+DB_URL = os.getenv("DATABASE_URL")
 
 def get_connection():
-    return sqlite3.connect(DB_FILE)
+    return psycopg.connect(DB_URL)
 
 def init_db():
     conn = get_connection()
@@ -20,9 +24,9 @@ def init_db():
     # Create a table "tasks" if does not exist, with columns id, title, done
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS tasks(
-            id INTEGER PRIMARY KEY,
+            id SERIAL PRIMARY KEY,
             title TEXT NOT NULL,
-            done INTEGER NOT NULL DEFAULT 0
+            done BOOLEAN NOT NULL DEFAULT FALSE
             )
     """)
     conn.commit()
@@ -32,11 +36,11 @@ def init_db():
     count = cursor.fetchone()[0]
     if count == 0:
         cursor.executemany(
-            "INSERT INTO tasks (title, done) VALUES (?, ?)",
+            "INSERT INTO tasks (title, done) VALUES (%s, %s)",
             [
-                ("wake up", 1),
-                ("feed dog", 1),
-                ("pet dog", 0)
+                ("wake up", True),
+                ("feed dog", True),
+                ("pet dog", False)
             ]
         )
         conn.commit()
