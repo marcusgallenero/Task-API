@@ -1,30 +1,24 @@
-# Task API
+ Task API - V3
 
 ## A simple CRUD API for managing tasks
 
-This Python project was built during my internship at FlyRank AI, where I was tasked with building my first CRUD API to get a feel for the "heartbeat" of every backend in the world, and build familiarity with Git.
+This Python project was built during my internship at FlyRank AI. Assignment 3 containerized the stack, meaning that the app and database now run in Docker, connected through Docker Compose.
 
 ### Getting Started
 
-Install dependencies:
+Copy the example .env file, and adjust if needed:
 
 ```
-pip install -r requirements.txt
+cp .env.example .env
 ```
 
-Start the server:
+Start everything with one command:
 
 ```
-uvicorn task:app --reload
+docker compose up
 ```
 
 The API runs at ``http://localhost:8000/``. OpenAPI docs (Swagger UI) are at ``http://localhost:8000/docs``.
-
-Start Postgres in Docker:
-
-```
-docker run --name taskdb -e POSTGRES_PASSWORD=dev -e POSTGRES_DB=tasks -p 5432:5432 -v taskdata:/var/lib/postgresql/data -d postgres
-```
 
 ### Endpoints
 
@@ -43,16 +37,22 @@ docker run --name taskdb -e POSTGRES_PASSWORD=dev -e POSTGRES_DB=tasks -p 5432:5
 Let's create a new task together, called "buy dog food":
 
 ```
-curl -X POST http://localhost:8000/tasks -H "Content-Type:application/json" -d '{"title": "buy dog food"}'
+curl -i -X POST http://localhost:8000/tasks -H "Content-Type:application/json" -d '{"title": "buy dog food"}'
 ```
 
 This should then create a new task, and return:
 
 ```JSON
+HTTP/1.1 201 Created
+date: Fri, 24 Jul 2026 05:35:01 GMT
+server: uvicorn
+content-length: 44
+content-type: application/json
+
 {
-  "id": 4,
-  "title": "buy dog food",
-  "done": false
+  "id":4,
+  "title":"buy dog food",
+  "done":false
 }
 ```
 
@@ -60,24 +60,12 @@ This can also be done in Swagger UI by inputting text below, and pressing **exec
 
 ![1784757393149](image/README/1784757393149.png)
 
-## SQLite & DB Browser
 
-### Why Use SQLite?
+## Postgres
 
-Since SQLite is just a single file, it does not require any administration or setup. It is also a common choice for small projects, teaching, and simple situations with little-medium traffic. This project has very light traffic, and SQLite makes it so that data survives upon restart, making it the perfect tool for the job.
+Data lives in a Postgres container rather than a local file. the `db` service in `compose.yaml` stores data in a Docker volume (`taskdata`), so tasks survive `docker compose down` followed by `docker compose up`.
 
-### Where the Database File is Stored
 
-Tasks are stored in ``tasks.db``, which is created the first time the app runs. Note that it is also gitignored, so cloning the repo should start a fresh workspace where the table and three example tasks are set up for you on initial launch.
+To view data directly: `docker exec -it task-api-db-1 psql -U postgres -d tasks -c "SELECT * FROM tasks;"`
 
-### Running DB Browser
-
-Using the query:
-
-```SQL
-SELECT * FROM tasks;
-```
-
-It returns the entire table of our database, as shown below (with only sample tasks):
-
-![1784774661611](image/README/1784774661611.png)
+![1784872524619](image/README/1784872524619.png)
