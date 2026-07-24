@@ -102,15 +102,14 @@ async def create_task(new_task: TaskCreate):
 
     # Add row in tasks with filled in title and done columns 
     cursor.execute(
-        "INSERT INTO tasks (title, done) VALUES (?, ?)",
-                   (new_task.title, int(new_task.done))
+        "INSERT INTO tasks (title, done) VALUES (%s, %s) RETURNING *",
+                   (new_task.title, new_task.done)
     )
+    row = cursor.fetchone() # Get contents of new row
     conn.commit()
-
-    new_id = cursor.lastrowid # Get id generated for new task
     conn.close()
 
-    return {"id": new_id, "title": new_task.title, "done": new_task.done}
+    return {"id": row[0], "title": row[1], "done": row[2]}
 
 @app.put("/tasks/{task_id}", summary="Update task by ID")
 async def update_task(task_id: int, updated_task: TaskCreate):
@@ -122,8 +121,8 @@ async def update_task(task_id: int, updated_task: TaskCreate):
 
     # change title and done columns on row with specified id
     cursor.execute(
-        "UPDATE tasks SET title = ?, done = ? WHERE id = ?",
-        (updated_task.title, int(updated_task.done), task_id)
+        "UPDATE tasks SET title = %s, done = %s WHERE id = %s",
+        (updated_task.title, updated_task.done, task_id)
     )
     conn.commit()
 
@@ -140,7 +139,7 @@ async def delete_task(task_id: int):
     cursor = conn.cursor()
 
     # Delete task with specified id
-    cursor.execute("DELETE FROM tasks WHERE id = ?", (task_id, ))
+    cursor.execute("DELETE FROM tasks WHERE id = %s", (task_id, ))
     conn.commit()
 
     # raise error if no rows were changed
