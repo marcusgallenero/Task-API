@@ -1,8 +1,9 @@
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
 import os
 import psycopg
-from dotenv import load_dotenv
+from pydantic import BaseModel
+from supabase import create_client, Client
 
 load_dotenv() # Read .env and loads keys into environment
 
@@ -10,9 +11,15 @@ class TaskCreate(BaseModel):
     title: str = ""
     done: bool = False
 
-app = FastAPI()
-
 DB_URL = os.getenv("DATABASE_URL")
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+print("Server running and connected to Supabase" if SUPABASE_KEY and SUPABASE_URL else "Missing Creds")
+
+app = FastAPI()
 
 def get_connection():
     return psycopg.connect(DB_URL)
