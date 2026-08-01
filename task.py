@@ -11,6 +11,10 @@ class TaskCreate(BaseModel):
     title: str = ""
     done: bool = False
 
+class AuthCredentials(BaseModel):
+    email: str = ""
+    password: str = ""
+
 DB_URL = os.getenv("DATABASE_URL")
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
@@ -155,3 +159,37 @@ async def delete_task(task_id: int):
         raise HTTPException(status_code=404, detail={"error": f"Task {task_id} not found"})
     conn.close()
     return 
+
+@app.post("/auth/signup", status_code=201, summary="Create New Account")
+async def signup(creds: AuthCredentials):
+    if not creds.email.strip() or not creds.password:
+        raise HTTPException(status_code=400, detail="Bad Request")
+
+    # Call Supabase signup method; catch signup failure to prevent server crash
+    try:
+        result = supabase.auth.sign_up({
+            "email": creds.email, 
+            "password": creds.password
+        })
+    except Exception as e:
+        raise HTTPException(status_code=400, detail={"error": str(e)})
+
+    return {"user": result.user}
+
+@app.post("/auth/login", summary="Authenticate & Return JWT")
+async def login(creds: AuthCredentials):
+    if not creds.email.strip() or not creds.password:
+        raise HTTPException(status_code=400, detail="Bad Request")
+
+    try:
+        result = supabase.auth.sign_in_with_password({
+            "email": creds.email,
+            "password": creds.password
+        })
+    except Exception:
+        raise HTTPException(status_code=401, detail={"error": "Invalid login credentials"})
+
+    return {
+        "access_token": result.session.access_token,
+        "refresh_token": result.session.refresh_token
+    }
