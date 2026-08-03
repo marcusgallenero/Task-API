@@ -201,5 +201,17 @@ async def get_profile(authorization: str = Header(default=None)):
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail={"error": "Access token required"})
 
-    token = authorization.split("Bearer: ")[1]
-    return {"message": "Welcome user! This info is private."}
+    token = authorization.split("Bearer ")[1]
+
+    try:
+        user_response = supabase.auth.get_user(token)
+    except Exception:
+        raise HTTPException(status_code=401, detail={"error": "Invalid or expired token"})
+
+    user = user_response.user
+    return {
+        "id": user.id,
+        "email": user.email,
+        "date_created": user.created_at
+    }
+    
