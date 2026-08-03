@@ -1,5 +1,5 @@
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Header
 import os
 import psycopg
 from pydantic import BaseModel
@@ -20,8 +20,6 @@ SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
-
-print("Server running and connected to Supabase" if SUPABASE_KEY and SUPABASE_URL else "Missing Creds")
 
 app = FastAPI()
 
@@ -193,3 +191,15 @@ async def login(creds: AuthCredentials):
         "access_token": result.session.access_token,
         "refresh_token": result.session.refresh_token
     }
+
+@app.get("/public/info", summary="Read public, open info")
+async def public_info():
+    return {"message": "Welcome stranger! This info is public."}
+
+@app.get("/protected/profile", summary="Read private profile data")
+async def get_profile(authorization: str = Header(default=None)):
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail={"error": "Access token required"})
+
+    token = authorization.split("Bearer: ")[1]
+    return {"message": "Welcome user! This info is private."}
