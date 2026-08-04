@@ -1,5 +1,6 @@
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Header, Depends
+from fastapi.security import HTTPBearer
 import os
 import psycopg
 from pydantic import BaseModel
@@ -20,6 +21,7 @@ SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+bearer_scheme = HTTPBearer()
 
 app = FastAPI()
 
@@ -196,11 +198,8 @@ async def login(creds: AuthCredentials):
 async def public_info():
     return {"message": "Welcome stranger! This info is public."}
 
-async def get_current_user(authorization:str = Header(default=None)):
-    if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail={"error": "Access token required"})
-    
-    token = authorization.split("Bearer ")[1]
+async def get_current_user(credentials = Depends(bearer_scheme)):
+    token = credentials.credentials
     
     try:
         user_response = supabase.auth.get_user(token)
