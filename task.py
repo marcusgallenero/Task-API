@@ -1,5 +1,5 @@
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Header
+from fastapi import FastAPI, HTTPException, Header, Depends
 import os
 import psycopg
 from pydantic import BaseModel
@@ -196,22 +196,35 @@ async def login(creds: AuthCredentials):
 async def public_info():
     return {"message": "Welcome stranger! This info is public."}
 
-@app.get("/protected/profile", summary="Read private profile data")
-async def get_profile(authorization: str = Header(default=None)):
+async def get_current_user(authorization:str = Header(default=None)):
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail={"error": "Access token required"})
-
+    
     token = authorization.split("Bearer ")[1]
-
+    
     try:
         user_response = supabase.auth.get_user(token)
     except Exception:
         raise HTTPException(status_code=401, detail={"error": "Invalid or expired token"})
+    
+    return user_response.user
 
-    user = user_response.user
+@app.get("/protected/profile", summary="Read private profile data")
+async def get_profile(user = Depends(get_current_user)):
     return {
         "id": user.id,
         "email": user.email,
         "date_created": user.created_at
     }
-    
+
+@app.get("/protected/dashboard", summary="Test route for reused auth")
+async def get_dashboard(user = Depends(get_current_user)):
+    return {"message": f"Welcome to your dashboard, {user.email}"}
+
+@app.post("/auth/logout", status_code=204, summary="End Users Session")
+async def logout(user = Depends(get_current_user)):
+    try:
+        supabase.auth.sign_out()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail={"error": str(e)})
+    return
