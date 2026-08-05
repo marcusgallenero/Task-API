@@ -1,5 +1,5 @@
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Header, Depends
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.security import HTTPBearer
 import os
 import psycopg
@@ -215,10 +215,6 @@ async def get_profile(user = Depends(get_current_user)):
         "email": user.email,
         "date_created": user.created_at
     }
-
-@app.get("/protected/dashboard", summary="Test route for reused auth")
-async def get_dashboard(user = Depends(get_current_user)):
-    return {"message": f"Welcome to your dashboard, {user.email}"}
 
 @app.post("/auth/logout", status_code=204, summary="End Users Session")
 async def logout(user = Depends(get_current_user)):
